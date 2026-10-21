@@ -26,6 +26,14 @@ function assertSafePath(file) {
     cursor = parent;
   }
 }
+
+// 绿色便携版中 %APPDATA%\WorkDaddy 是指向 Userdata 的 Junction（目录联接）。
+// Node 的 lstat 会把 Junction 判为符号链接，导致上方 assertSafePath 误拒路径。
+// 此处先用 realpathSync 把 Junction 透明解析为真实目录，使安全检查与安装版一致，
+// 且不改变安全语义（解析后整条父链不再含符号链接；深层真实符号链接仍会被拦）。
+function resolveBackupRoot(root) {
+  try { return fs.realpathSync(path.resolve(root)); } catch (_) { return path.resolve(root); }
+}
 function snapshot(dir) {
   assertSafePath(dir);
   const result = {};
